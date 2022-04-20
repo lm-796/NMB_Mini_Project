@@ -222,7 +222,7 @@ The LRT and AIC agree that the best model includes intensity and training.
 In conclusion, the best model according to AIC includes both intensity and training, but not length and not a random staff nor participant effect. Other model selection (deviance and LRT) techniques agree with this conclusion.
 
 The parameter estimates and their standard errors are as follows:
-
+ 
 
 ```{r, table}
 
