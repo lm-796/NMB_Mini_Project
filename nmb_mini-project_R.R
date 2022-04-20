@@ -1,4 +1,4 @@
-rm(list = ls())  #this line of code will clead yor working environment 
+rm(list = ls())  #this line of code will clean yor working environment 
 
 # Set working directory and importing dataset in R
 setwd("C:/OFFICE_/NMB_quick_miniproject")
