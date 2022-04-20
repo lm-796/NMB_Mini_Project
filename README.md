@@ -28,4 +28,215 @@ The primary areas to be covered will be:
   
 	 Drawing appropriate conclusions, aimed at a data scientist manager. 
    
+   
+   
+   
+   
+ 
+
+### Setting your directory and importing dataset
+setwd("C:/OFFICE_/NMB_quick_miniproject")
+
+```{r setup, include=FALSE}
+nmbdata<-read.delim("nmb_miniproject.txt", head=T)
+#knitr::opts_chunk$set(echo = TRUE)
+```
+
+### R Data Exploration
+
+This section will give simple data exploration
+
+```{r explore}
+summary(nmbdata)
+```
+
+### Doing simple checks, eg. dimension of dataset and any suspected missing values 
+```{r data check}
+dim(nmbdata)
+sum(is.na(nmbdata))
+
+```
+
+### Including Simple Plots
+
+You can also embed plots, for example:
+
+```{r plot, echo=T}
+library(ggplot2)
+ggplot(data = nmbdata, mapping = aes(x = complete, y = length))+geom_point()
+ggplot(data = nmbdata, mapping = aes(x = complete, y = intensity))+geom_point()
+```
+
+### Doing some statistical analysis
+
+
+```{r data, echo=T}
+library(lme4)
+modelilt <- glm(formula=complete~ intensity+length+factor(training),data = nmbdata,family = binomial())
+summary(modelilt)
+```
+
+Note that if the `echo` parameter will be changed to 'FALSE' or 'F', the code chunk will prevent printing of the R code that generated the plot.
+
+
+# Main Analysis
+
+Using the t-test both Intensity and training have p-values < 0.05, so have covariate values significantly different zero. Suggesting these covariates should be included in the model. However, as the p-value for length is 0.74, this not significantly different from zero, so should not be included in the model.
+
+### R code for fitting a selection of other models:
+```{r fitting a selection of other models, echo=T}
+ modelil <- glm(formula=complete~ intensity+length,data = nmbdata,family = binomial())
+ modelit <- glm(formula=complete~ intensity+factor(training),data = nmbdata,family = binomial())
+ modellt <- glm(formula=complete~ length+factor(training),data = nmbdata,family = binomial())
+modeli <- glm(formula=complete~ intensity,data = nmbdata,family = binomial())
+ modell <- glm(formula=complete~ length,data = nmbdata,family = binomial())
+ modelt <- glm(formula=complete~ factor(training),data = nmbdata,family = binomial())
+ modelconst <- glm(formula=complete~ 1,data = nmbdata,family = binomial())
+```
+
+
+### AIC model selection:
+```{r, AIC Model selection}
+library(lmerTest)
+ AICvalues <- c(AIC(modelilt),AIC(modelil),AIC(modelit),AIC(modellt),AIC(modeli),AIC(modell),AIC(modelt), AIC(modelconst))
+ modelname <- c("intensity+length+training", "intensity+length", "intensity+training","length+training","intensity","length","training","const")
+ AICvaluesr <- round(AICvalues,digits=2)
+ deltaAIC <-AICvalues-min(AICvalues)
+ deltaAICr <-round(deltaAIC,digits=2)
+ AICweight <- round(exp(-deltaAIC/2)/sum(exp(-deltaAIC/2)),digits=2)
+ AICtable <- data.frame(modelname,AICvaluesr,deltaAICr,AICweight)
+ colnames(AICtable ) <- c("Model", "AIC","Delta AIC","AIC weight")
+ print(AICtable)
+```
+
+The best model includes intensity and training, other possible models include all three covariates or just training (models with AIC weight > 0.1)
+
+### Analysis of Deviance:
+#### Level 1 Analysis of Deviance - compare to constant model
+```{r,comapruing with constant model}
+ Modellist <- list( )
+ Modellist[[1]] <- modeli
+ Modellist[[2]] <- modell
+ Modellist[[3]] <- modelt
+ modelcompare <- modelconst
+ modelname <- c("intensity", "length","training") 
+ # Create Analysis of Deviance
+ dev <- rep(0,(length(Modellist)))
+ for (i in 1:(length(Modellist))){dev[i]=Modellist[[i]]$deviance}
+ devcompare <- modelcompare$deviance
+ DF <- rep(0,(length(Modellist)))
+ for (i in 1:(length(Modellist))){DF[i]=Modellist[[i]]$df.residual}
+ DFcompare <- modelcompare$df.residual
+ diffdev=devcompare-dev
+ diffDF=DFcompare-DF
+ pval=pchisq(diffdev, df=diffDF, lower.tail=FALSE)
+ devtable = data.frame(modelname,diffdev,diffDF,pval)
+ colnames(devtable) <- c("Model", "Diff Deviance","Diff DF","p-value")
+ print(devtable)
+```
+Both intensity and training have p-values < 0.05, training has smallest p-values, so use to compare at level 2
+
+#### Level 2 – compare to training
+```{r,level2 comparing to training}
+ Modellist <- list( )
+ Modellist[[1]] <- modelit
+ Modellist[[2]] <- modellt
+ modelcompare <- modelt
+ modelname <- c("intensity+training","length+training") 
+ 
+ # Create Analysis of Deviance 
+ dev <- rep(0,(length(Modellist)))
+ for (i in 1:(length(Modellist))){dev[i]=Modellist[[i]]$deviance}
+ devcompare <- modelcompare$deviance
+ DF <- rep(0,(length(Modellist)))
+ for (i in 1:(length(Modellist))){DF[i]=Modellist[[i]]$df.residual}
+ DFcompare <- modelcompare$df.residual
+ diffdev=devcompare-dev
+ diffDF=DFcompare-DF
+ pval=pchisq(diffdev, df=diffDF, lower.tail=FALSE)
+ devtable = data.frame(modelname,diffdev,diffDF,pval)
+ colnames(devtable) <- c("Model", "Diff Deviance","Diff DF","p-value")
+ print(devtable)
+```
+Only adding intensity has a p-value < 0.05. Compare to intensity + training at the next level.
+
+
+#### Level 3 Analysis of Deviance - compare to training+intensity
+```{r, Level 3 compare to training+intensity}
+ Modellist <- list( )
+ Modellist[[1]] <- modelilt
+ modelcompare <- modelit
+ modelname <- c("intensity+length+training") 
+ 
+ # Create Analysis of Deviance
+ dev <- rep(0,(length(Modellist)))
+ for (i in 1:(length(Modellist))){dev[i]=Modellist[[i]]$deviance}
+ devcompare <- modelcompare$deviance
+ DF <- rep(0,(length(Modellist)))
+ for (i in 1:(length(Modellist))){DF[i]=Modellist[[i]]$df.residual}
+ DFcompare <- modelcompare$df.residual
+ diffdev=devcompare-dev
+ diffDF=DFcompare-DF
+ pval=pchisq(diffdev, df=diffDF, lower.tail=FALSE)
+ devtable = data.frame(modelname,diffdev,diffDF,pval)
+ colnames(devtable) <- c("Model", "Diff Deviance","Diff DF","p-value")
+ print(devtable)
+```
+p-value > 0.05, so do not include length. Therefore, best model is intensity + training. This is the same as the best model according to AIC.
+
+
+### Now consider adding random participant effects to this model:
+#### Model with just staff:
+```{r,model with just staff}
+ modelits <- glmer(formula=complete~ intensity+factor(training)+(1|Staff),data = nmbdata,family = binomial())
+```
+
+#### Model with staff and participant:
+```{r,Model with staff and participant}
+ 
+ modelitsp <- glmer(formula=complete~ intensity+factor(training)+(1|Staff/Participant),data = nmbdata,family = binomial()) # ingnore the error boundary (singular) fit: see help('isSingular')
+```
+
+### LRT for whether need to add random staff effect
+```{r,LRT for whether need to add random staff effect}
+ LRT <- 2*(logLik(modelits)[1]-logLik(modelit)[1])
+ pvalue <- 1-pchisq(LRT, df=1) 
+ LRTresults <- data.frame(LRT,pvalue)
+ print(LRTresults)
+```
+As the p-value > 0.05, this suggests there is no evidence of a random staff effect.
+
+### AIC model selection:
+```{r,AIC model selection}
+ AIC(modelit,modelits,modelitsp)
+
+```
+According to AIC the best model has intensity and training but not a random staff or participant effect.
+
+The LRT and AIC agree that the best model includes intensity and training.
+
+### Results for best model:
+```{r, Results for best model}
+ summary(modelit)
+```
+
+In conclusion, the best model according to AIC includes both intensity and training, but not length and not a random staff nor participant effect. Other model selection (deviance and LRT) techniques agree with this conclusion.
+
+The parameter estimates and their standard errors are as follows:
+
+
+```{r, table}
+
+Parameter	<-c('Intercept', 'Intensity','Training_1')
+Estimate<-c(5.27, -0.83, 1.18)
+Standard_Error<-c(2.20, 0.36, 0.43)
+data.frame(Parameter,Estimate,Standard_Error)
+````
+
+As the intensity increases the probability of completing decreases. The participant is more likely to complete if they took part in training (1 represents took part in program). 
+
+  
+   
+   
+   
 
