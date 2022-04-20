@@ -28,6 +28,4 @@ The primary areas to be covered will be:
   
 	 Drawing appropriate conclusions, aimed at a data scientist manager. 
    
-git init
-git add .
-git commit -m "initial commit"
+
