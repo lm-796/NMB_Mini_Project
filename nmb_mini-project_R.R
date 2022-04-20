@@ -5,7 +5,7 @@ setwd("C:/OFFICE_/NMB_quick_miniproject")
 nmbdata<-read.delim("nmb_miniproject.txt", head=T)
 
 nmbdata<-read_excel("exammock_MA7512.xlsx",sheet = "question 2")
-head(nmbdata)
+head(nmbdata) 
 
 ##The dependent variable is binary, therefore a generalised linear model under Binomial family will be appropriate 
 #install.packages("lme4") #By removing the LHS hash will install the required package (if a need be)
